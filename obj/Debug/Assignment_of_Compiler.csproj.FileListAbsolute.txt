@@ -1,0 +1,7 @@
+E:\Visual Studio Projects\Assignment_of_Compiler\bin\Debug\Assignment_of_Compiler.exe.config
+E:\Visual Studio Projects\Assignment_of_Compiler\bin\Debug\Assignment_of_Compiler.exe
+E:\Visual Studio Projects\Assignment_of_Compiler\bin\Debug\Assignment_of_Compiler.pdb
+E:\Visual Studio Projects\Assignment_of_Compiler\obj\Debug\Assignment_of_Compiler.csprojAssemblyReference.cache
+E:\Visual Studio Projects\Assignment_of_Compiler\obj\Debug\Assignment_of_Compiler.csproj.CoreCompileInputs.cache
+E:\Visual Studio Projects\Assignment_of_Compiler\obj\Debug\Assignment_of_Compiler.exe
+E:\Visual Studio Projects\Assignment_of_Compiler\obj\Debug\Assignment_of_Compiler.pdb
