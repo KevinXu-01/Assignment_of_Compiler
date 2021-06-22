@@ -10,51 +10,78 @@ namespace Assignment_of_Compiler
         public int _id;
         public string _value;
     };
+    struct RESULT
+    {
+        public string _content;
+        public int _class;
+        public string _value;
+    }
     class Program
     {
-        private static List<_keyword_and_symbol> keyword_and_symbol_list = new List<_keyword_and_symbol>(); //符号表和关键词表（一符一码）
-        private static List<char> letter = new List<char>();
-        private static int length;
-        private static int num;
-        private static List<_keyword_and_symbol> result = new List<_keyword_and_symbol>(); //词法分析结果
+        private static List<_keyword_and_symbol> keyword_list = new List<_keyword_and_symbol>(); //关键词表（一符一码）
+        private static List<_keyword_and_symbol> symbol_list = new List<_keyword_and_symbol>(); //符号表（一符一码）
+        private static List<_keyword_and_symbol> identifier_list = new List<_keyword_and_symbol>(); //标识符表（一符一码）
+        private static string code = "";
+        private static int cur_pos = 0;
+        private static bool isPassed = true;
+        private static string error = "";
+        private static List<RESULT> result = new List<RESULT>(); //词法分析结果
 
-        static void init()
+        static void init() //初始化符号表和关键词表
         {
-            StreamReader file = new StreamReader("keyword_and_symbol.txt");
+            StreamReader keyword_file = new StreamReader("keyword.txt");
             string line;
-            while((line = file.ReadLine()) != null) //读入符号表
+            while((line = keyword_file.ReadLine()) != null) //读入关键词表
+            {
+                _keyword_and_symbol temp;
+                temp._id = Convert.ToInt32(line.Split('\t')[0]);
+                temp._value = line.Split('\t')[1];
+                keyword_list.Add(temp);
+            }
+            keyword_file.Close();
+
+
+            StreamReader symbol_file = new StreamReader("symbol.txt");
+            while ((line = symbol_file.ReadLine()) != null) //读入符号表
             {
                 _keyword_and_symbol temp;
                 temp._id = Convert.ToInt32(line.Split('\t')[0]) + 1;
                 temp._value = line.Split('\t')[1];
-                keyword_and_symbol_list.Add(temp);
+                symbol_list.Add(temp);
             }
-            file.Close();
+            symbol_file.Close();
         }
-        static void LoadCode()
+        static void LoadCode() //加载代码
         {
-            length = 0;
             StreamReader file = new StreamReader("code.txt");
-            string code = file.ReadToEnd();
-            code = code.Replace("\n", "");
-            code = code.Replace("\t", "");
-            code = code.Replace("\r", "");
-            file.Close();
-            for(int i = 0; i < code.Length; i++)
+            string line = "";
+            while((line = file.ReadLine()) != null)
             {
-                if(code[i] != ' ')
+                if (line.Contains("@"))
                 {
-                    letter.Add(code[i]);
-                    length++;
+                    line = line.Split('@')[0]; //清除注释
                 }
+                code += line + "\n\r";
             }
+            code = code.Replace("\n", " ");
+            code = code.Replace("\t", " ");
+            code = code.Replace("\r", " ");
+            file.Close();
         }
         static int isKeywordOrSymbol(string s)   //判断关键字、运算符和界限符
         {
-            for (int i = 0; i <= 93; i++)
+            for (int i = 2; i <= 25; i++)
             {
-                if (s == keyword_and_symbol_list[i]._value)
-                    return keyword_and_symbol_list[i]._id;
+                if ( i <= 21 )
+                {
+                    if (s == symbol_list[i]._value)
+                        return symbol_list[i]._id;
+                }
+                else
+                {
+                    if (s == keyword_list[i - 22]._value)
+                        return keyword_list[i - 22]._id;
+                }
             }
             return -1;
         }
@@ -66,36 +93,38 @@ namespace Assignment_of_Compiler
         }
         static bool isLetter(char s) //判断是否是字母
         {
-            if (s >= 'a' && s <= 'z' || s >= 'A' && s <= 'Z')
+            if (s >= 'a' && s <= 'z')
                 return true;
             return false;
         }
 
         static int typeword(char s) //返回单个字符的类型
         {
-            if (s >= 'a' && s <= 'z' || s >= 'A' && s <= 'Z')
+            if (s >= 'a' && s <= 'z')
                 return 1; //字母
             if (s >= '0' && s <= '9')
                 return 2; //数字
-            if (s == '#' || s == '{' || s == '}' || s == '(' || s == ')' || s == ';' || s == ',' || s == '\'' || s == '+' || s == '-' || s == '*' || s == '/' ||
-                s == '=' || s == '<' || s == '>' || s == '!' || s == '^' || s == '&' || s == '|') //运算符和界符 
+            if (s == '#' || s == '{' || s == '}' || s == '(' || s == ')' || s == ';' || s == ':'  || s == '+' || s == '-' || s == '*' || s == '/' ||
+                s == '=' || s == '<' || s == '>' || s == '!' || s == '&' || s == '|') //运算符和界符 
                 return 3;
+            if (s == ' ')
+                return 4;
             return -1;
         }
 
-        static string identifier(string s, int n) //判断是否是标识符
+        static string identifier(string s) //判断是否是标识符
         {
-            int j = n + 1;
+            int j = cur_pos + 1;
             bool flag = true;
             while(flag)
             {
-                if(isNum(letter[j]) || isLetter(letter[j]))
+                if(isNum(code[j]) || isLetter(code[j]))
                 {
-                    s += letter[j];
+                    s += code[j];
                     if(isKeywordOrSymbol(s) != -1)
                     {
                         j++;
-                        num = j;
+                        cur_pos = j;
                         return s;
                     }
                     j++;
@@ -105,37 +134,78 @@ namespace Assignment_of_Compiler
                     flag = false;
                 }
             }
-            num = j;
+            cur_pos = j;
             return s;
         }
         
-        static string symbolStr(string s, int n)
+        static string symbolStr(string s)
         {
-            int j = n + 1;
-            if (j >= length)
+            if (s == ":" || s == "<" || s == ">" || s == "=" || s == "!")
             {
-                num = j;
-                return s;
+                int j = cur_pos + 1;
+                if (j >= code.Length)
+                {
+                    cur_pos = j;
+                    return s;
+                }
+                char str = code[j];
+                if (str == '=')
+                {
+                    s += str;
+                    j++;
+                    cur_pos = j;
+                }
+                else if (isNum(str) || isLetter(str) || str == ' ')
+                {
+                    cur_pos++;
+                }
+                else
+                {
+                    string temp = s;
+                    s = "undefined symbol: " + temp + str;
+                }
             }
-            char str = letter[j];
-            if (str == '>' || str == '=' || str == '<' || str == '!')
+            else  if (s == "&" || s == "|")
             {
-                s += str;
-                j++;
+                int j = cur_pos + 1;
+                if (j >= code.Length)
+                {
+                    cur_pos = j;
+                    return s;
+                }
+                char str = code[j];
+                if (s == "&" && str == '&' || s == "|" && str == '|')
+                {
+                    s += str;
+                    j++;
+                    cur_pos = j;
+                }
+                else if (isNum(str) || isLetter(str) || str == ' ')
+                {
+                    cur_pos++;
+                }
+                else
+                {
+                    string temp = s;
+                    s = "undefined symbol: " + temp + str;
+                }
             }
-            num = j;
+            else
+            {
+                cur_pos++;
+            }
             return s;
         }
 
-        static string Number(string s, int n)
+        static string Number(string s)
         {
-            int j = n + 1;
+            int j = cur_pos + 1;
             bool flag = true;
             while(flag)
             {
-                if(isNum(letter[j]))
+                if(isNum(code[j]))
                 {
-                    s += letter[j];
+                    s += code[j];
                     j++;
                 }
                 else
@@ -143,59 +213,90 @@ namespace Assignment_of_Compiler
                     flag = false;
                 }
             }
-            num = j;
+            cur_pos = j;
             return s;
+        }
+        
+        static int indexOf(string identifier)
+        {
+            for(int i = 0; i < identifier_list.Count; i++)
+            {
+                if (identifier == identifier_list[i]._value)
+                    return identifier_list[i]._id;
+            }
+            return -1;
         }
 
         static void TakeWord()
         {
             int k;
-            for (num = 0; num < length;)
+            while(cur_pos < code.Length)
             {
                 string str1;
                 char str;
-                str = letter[num];
+                str = code[cur_pos];
                 k = typeword(str);
                 switch (k)
                 {
                     case 1: //字母
                         {
-                            str1 = identifier(Convert.ToString(str), num);
+                            str1 = identifier(Convert.ToString(str));
                             if (isKeywordOrSymbol(str1) != -1)
                             {
-                                _keyword_and_symbol temp;
-                                temp._value = str1;
-                                temp._id = isKeywordOrSymbol(str1); //关键词
+                                RESULT temp;
+                                temp._content = str1; // str1
+                                temp._value = "_"; // value
+                                temp._class = isKeywordOrSymbol(str1); //class
                                 result.Add(temp);
                             }
                             else
                             {
-                                _keyword_and_symbol temp;
-                                temp._value = str1;
-                                temp._id = 0; //标识符
+                                RESULT temp;
+                                temp._content = str1;
+                                temp._class = 0; //标识符
+
+                                int index = indexOf(temp._content);
+                                if (index == -1)
+                                {
+                                    _keyword_and_symbol tmp;
+                                    tmp._id = identifier_list.Count;
+                                    tmp._value = temp._content;
+                                    identifier_list.Add(tmp);
+                                }
+                                index = index == -1 ? identifier_list.Count - 1 : index;
+                                temp._value = Convert.ToString(identifier_list[index]._id);
+
                                 result.Add(temp);
                             }
                             break;
                         }
                     case 2: //数字
                         {
-                            str1 = Number(Convert.ToString(str), num);
-                            _keyword_and_symbol temp;
-                            temp._value = str1;
-                            temp._id = keyword_and_symbol_list.Count + 1;
+                            str1 = Number(Convert.ToString(str));
+                            RESULT temp;
+                            temp._value = temp._content = str1;
+                            temp._class = 1;
                             result.Add(temp);
                             break;
                         }
                     case 3:
                         {
-                            str1 = symbolStr(Convert.ToString(str), num);
-                            _keyword_and_symbol temp;
-                            temp._value = str1;
-                            temp._id = isKeywordOrSymbol(str1); //边界符/运算符
+                            str1 = symbolStr(Convert.ToString(str));
+
+                            if(str1.Contains("undefined symbol:"))
+                            {
+                                isPassed = false; error = str1; return;
+                            }
+
+                            RESULT temp;
+                            temp._content = str1;
+                            temp._value = "_";
+                            temp._class = isKeywordOrSymbol(str1); //边界符/运算符
                             result.Add(temp);
                             break;
                         }
-                    default: break;
+                    case 4: cur_pos++; break;
+                    default: isPassed = false; error = "undefined symbol: " + str; return;
                 }
             }
          }
@@ -204,14 +305,35 @@ namespace Assignment_of_Compiler
             init();
             LoadCode();
             TakeWord();
-            StreamWriter file = new StreamWriter("result.txt");
-            for(int i = 0; i < result.Count; i++)
+            if(!isPassed)
             {
-                file.WriteLine(result[i]._value + "\t\t" + result[i]._id);
+                Console.WriteLine("出错了！错误信息是" + error);
+                return;
+            }
+            Console.WriteLine("下面是词法分析的结果：\ncontent\t\t<class, value>\n");
+            StreamWriter file = new StreamWriter("result.txt");
+            StreamWriter file1 = new StreamWriter("identifier.txt");
+
+            file.WriteLine("content\t\t<class, value>\n");
+            for (int i = 0; i < result.Count; i++)
+            {
+                Console.WriteLine(result[i]._content + "\t\t" + "<" + result[i]._class + ", " + result[i]._value + ">");
+                file.WriteLine(result[i]._content + "\t\t" + "<" + result[i]._class + ", " + result[i]._value + ">");
+            }
+
+            Console.WriteLine("\n正在写入文件......");
+            file1.WriteLine("id\t\tcontent\n");
+
+            for (int i = 0; i < identifier_list.Count; i++)
+            {
+                file1.WriteLine(identifier_list[i]._id + "\t\t" + identifier_list[i]._value);
             }
             file.Flush();
+            file1.Flush();
             file.Close();
-            Console.WriteLine("完成！");
+            file1.Close();
+
+            Console.WriteLine("写入完成！");
         }
 
     }

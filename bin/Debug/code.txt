@@ -1,11 +1,12 @@
-#include <iostream>
-using namespace std;
-
-int main() {
-	int a, b;
-	a = 103;
-	if (a>=b) {
-		a = a * b;
-	}
-	return 0;
+xjybegin
+a := 1;@赋值
+b := 2;@赋值
+if (a > b)@条件
+{
+	    a = a + 2;@条件
 }
+else
+{
+	    a = a - 2;
+}
+#
